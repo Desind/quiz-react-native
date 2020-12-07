@@ -3,13 +3,13 @@ import {StyleSheet, View, Text} from 'react-native';
 
 class ResultDataBox extends Component {
     render() {
-        const {user, points, type, date} = this.props;
+        const {user, points1, points2, type, date} = this.props;
         return (
             <View>
                 <View style={styles.resultsDataSpacer}></View>
                 <View style={styles.resultsData}>
                     <Text style={styles.resultsDataColumns}>{user}</Text>
-                    <Text style={styles.resultsDataColumns}>{points}</Text>
+                    <Text style={styles.resultsDataColumns}>{points1 + "/" + points2}</Text>
                     <Text style={styles.resultsDataColumns}>{type}</Text>
                     <Text style={styles.resultsDataColumns}>{date}</Text>
                 </View>
@@ -23,8 +23,8 @@ const styles = StyleSheet.create({
     resultsData: {
         flexDirection: 'row',
         backgroundColor: "#ddd",
-        marginRight: 10,
-        marginLeft: 10,
+        marginRight: 5,
+        marginLeft: 5,
     },
     resultsDataColumns: {
         flex: 1,
