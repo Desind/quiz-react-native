@@ -1,5 +1,5 @@
 import {StatusBar} from 'expo-status-bar';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView} from 'react-native';
 import 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
@@ -11,7 +11,159 @@ import ResultDataBox from "./ResultDataBox";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {FlatList} from "react-native";
 import {RefreshControl} from "react-native";
+import CountDown from 'react-native-countdown-component';
 
+let quizes = [
+    {
+        "name": "Wiedza o muzyce współczesnej",
+        "tag1": "#Metal",
+        "tag2": "#Deathcore",
+        "description": "Test sprawdzający wiedzę o współczesnej muzyce metalowej",
+        "tasks": [
+            {
+                "question": "Której literze z w alfabecie morsa odpowiada rytm z intro Meshuggah - Bleed",
+                "answers": [
+                    {
+                        "content": "A",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "F",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "G",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "V",
+                        "isCorrect": true,
+                    },
+                ],
+                "duration": 20
+            },
+            {
+                "question": "Co jest najlepszą częścią piosenki",
+                "answers": [
+                    {
+                        "content": "Refren",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "Blastbeat",
+                        "isCorrect": true,
+                    },
+                    {
+                        "content": "Breakdown",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "Intro",
+                        "isCorrect": false,
+                    },
+                ],
+                "duration": 18
+            },
+            {
+                "question": "Josean Orta jest perkusistą w zespole",
+                "answers": [
+                    {
+                        "content": "Thy Art is Murder",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "Cattle Decapitation",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "Infant Anihilator",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "Fit For an Autopsy",
+                        "isCorrect": true,
+                    },
+                ],
+                "duration": 17
+            }
+        ]
+
+    },
+    {
+        "name": "Quiz 2",
+        "tag1": "#tag1",
+        "tag2": "#tag2",
+        "description": "Description of a quiz",
+        "tasks": [
+            {
+                "question": "Poprawne A",
+                "answers": [
+                    {
+                        "content": "A",
+                        "isCorrect": true,
+                    },
+                    {
+                        "content": "B",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "C",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "D",
+                        "isCorrect": false,
+                    },
+                ],
+                "duration": 5
+            },
+            {
+                "question": "Poprawne te, które nie są F, I, J",
+                "answers": [
+                    {
+                        "content": "F",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "K",
+                        "isCorrect": true,
+                    },
+                    {
+                        "content": "J",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "I",
+                        "isCorrect": false,
+                    },
+                ],
+                "duration": 4
+            },
+            {
+                "question": "2+2*2/2",
+                "answers": [
+                    {
+                        "content": "2",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "4",
+                        "isCorrect": true,
+                    },
+                    {
+                        "content": "8",
+                        "isCorrect": false,
+                    },
+                    {
+                        "content": "6",
+                        "isCorrect": false,
+                    },
+                ],
+                "duration": 20
+            }
+        ]
+    }
+]
 
 let results = [
     {
@@ -85,7 +237,7 @@ function ToS({navigation}) {
 }
 
 function Main({navigation}) {
-    const getData = async () => {
+    const tosHandler = async () => {
         try {
             const value = await AsyncStorage.getItem('@storage_Key')
             if (value !== null) {
@@ -97,52 +249,150 @@ function Main({navigation}) {
             // error reading value
         }
     }
-    console.log(getData());
+    tosHandler();
+
 
     return (
         <SafeAreaView style={styles.safeAreaMain}>
             <ScrollView>
-                <QuizBox title={"Quiz1"} onClick={() => navigation.navigate('Test')} tag1={"#Tag1"} tag2={"#Tag2"}
-                         text={"Sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text,"}/>
-                <QuizBox title={"Quiz2"} onClick={() => navigation.navigate('Test')} tag1={"#Tag1"} tag2={"#Tag2"}
-                         text={"Sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text,"}/>
-                <QuizBox title={"Quiz3"} onClick={() => navigation.navigate('Test')} tag1={"#Tag1"} tag2={"#Tag2"}
-                         text={"Sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text,"}/>
-                <QuizBox title={"Quiz4"} onClick={() => navigation.navigate('Test')} tag1={"#Tag1"} tag2={"#Tag2"}
-                         text={"Sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text, sample text,"}/>
+                {quizes.map((item, id) =>
+                    <QuizBox title={item.name} onClick={() => navigation.navigate('Test', {id})} tag1={item.tag1}
+                             tag2={item.tag2}
+                             text={item.description}/>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
 
 }
 
-function Test({navigation}) {
+
+function Test({route, navigation}) {
+    console.log("test");
+
+    function initiateQuestion() {
+        console.log("initquestion")
+        setTitle(quizes[id].name);
+        if (questionNumber > quizes[id].tasks.length - 1) {
+            finishQuiz();
+        } else {
+            setTimeLeft(quizes[id].tasks[questionNumber].duration);
+            setQuestion(quizes[id].tasks[questionNumber].question);
+            setAnsA(quizes[id].tasks[questionNumber].answers[0].content);
+            setAnsB(quizes[id].tasks[questionNumber].answers[1].content);
+            setAnsC(quizes[id].tasks[questionNumber].answers[2].content);
+            setAnsD(quizes[id].tasks[questionNumber].answers[3].content);
+        }
+    }
+
+    function clickedAnswer(answer) {
+        console.log("click")
+        if (quizes[id].tasks[questionNumber].answers[answer].isCorrect) {
+            colorCorrect(answer);
+            setCorrect(correct + 1);
+        } else {
+            colorIncorrect(answer);
+        }
+        if (questionNumber <= quizes[id].tasks.length - 1) {
+            setTimeout(() => {
+                setAnsAColor("#bbb");
+                setAnsBColor("#bbb");
+                setAnsCColor("#bbb");
+                setAnsDColor("#bbb");
+
+                setQuestionNumber(questionNumber + 1);
+                initiateQuestion(questionNumber);
+
+            }, 1000)
+        }
+    }
+
+    function finishQuiz() {
+        console.log("rekin");
+        setFinished(true);
+    }
+
+    function colorCorrect(rekin) {
+        switch (rekin) {
+            case 0:
+                setAnsAColor("#80cc80");
+                break;
+            case 1:
+                setAnsBColor("#80cc80");
+                break;
+            case 2:
+                setAnsCColor("#80cc80");
+                break;
+            case 3:
+                setAnsDColor("#80cc80");
+                break;
+        }
+    }
+
+    function colorIncorrect(rekin) {
+        switch (rekin) {
+            case 0:
+                setAnsAColor("#ff8080");
+                break;
+            case 1:
+                setAnsBColor("#ff8080");
+                break;
+            case 2:
+                setAnsCColor("#ff8080");
+                break;
+            case 3:
+                setAnsDColor("#ff8080");
+                break;
+        }
+    }
+
+    const {id} = route.params;
+    useEffect(() => {
+        initiateQuestion(questionNumber);
+    });
+    const [finished, setFinished] = useState(false)
+    const [title, setTitle] = useState("Title");
+    const [question, setQuestion] = useState("Question")
+    const [questionNumber, setQuestionNumber] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [barSize, setBarSize] = useState(1);
+    const [ansA, setAnsA] = useState("A");
+    const [ansB, setAnsB] = useState("B");
+    const [ansC, setAnsC] = useState("C");
+    const [ansD, setAnsD] = useState("D");
+    const [correct, setCorrect] = useState(0);
+    const [ansAColor, setAnsAColor] = useState("#bbb");
+    const [ansBColor, setAnsBColor] = useState("#bbb");
+    const [ansCColor, setAnsCColor] = useState("#bbb");
+    const [ansDColor, setAnsDColor] = useState("#bbb");
     return (
         <SafeAreaView>
-            <View>
-                <Text style={styles.testTitle}>Title</Text>
+            <View style={finished && styles.hidden}>
+                <Text style={styles.testTitle}>{title}</Text>
                 <View style={styles.flexRow}>
-                    <Text style={styles.testQuestionNumber}>Question 21</Text>
-                    <Text style={styles.testTimeLeft}>Time: 37s</Text>
+                    <Text style={styles.testQuestionNumber}>Question: {questionNumber + 1}</Text>
                 </View>
-                <View style={styles.testTimeBar}>
-                    <View style={styles.testTime}></View>
-                    <View></View>
-                </View>
-                <Text style={styles.testQuestion}>Some long question only to fill text in this app, and it doesn't
-                    provide any other purpose than
-                    being long?</Text>
+                <Text style={styles.testQuestion}>{question}</Text>
                 <View style={styles.flexColumn}>
-                    <TouchableOpacity style={styles.testAnswerButton}><Text>A</Text></TouchableOpacity>
-                    <TouchableOpacity style={styles.testAnswerButton}><Text>B</Text></TouchableOpacity>
-                    <TouchableOpacity style={styles.testAnswerButton}><Text>C</Text></TouchableOpacity>
-                    <TouchableOpacity style={styles.testAnswerButton}><Text>D</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => clickedAnswer(0)}
+                                      style={[styles.testAnswerButton, {backgroundColor: ansAColor}]}><Text>{ansA}</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => clickedAnswer(1)}
+                                      style={[styles.testAnswerButton, {backgroundColor: ansBColor}]}><Text>{ansB}</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => clickedAnswer(2)}
+                                      style={[styles.testAnswerButton, {backgroundColor: ansCColor}]}><Text>{ansC}</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => clickedAnswer(3)}
+                                      style={[styles.testAnswerButton, {backgroundColor: ansDColor}]}><Text>{ansD}</Text></TouchableOpacity>
                 </View>
 
             </View>
+            <View style={!finished && styles.hidden}>
+                <Text style={styles.testTitle}>Result:</Text>
+            </View>
+            <View><Text style={styles.testTitle}>{correct}/{quizes[id].tasks.length}</Text></View>
             <View style={{flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 20}}>
                 <Text onPress={() => navigation.navigate('Results')}>Results</Text>
             </View>
+
         </SafeAreaView>
     );
 }
@@ -188,7 +438,9 @@ function Results({navigation}) {
                 "date": "22-11-2020"
             }
         ]
-        setTimeout(() => {setRefreshing(false)}, 1000)
+        setTimeout(() => {
+            setRefreshing(false)
+        }, 1000)
     }
     const renderItem = ({pack}) => (
         <ResultDataBox user={pack.nick} points1={pack.score} points2={pack.total} type={pack.type} date={pack.date}/>
@@ -217,10 +469,12 @@ function Results({navigation}) {
                 <FlatList
                     data={results}
                     renderItem={({item}) =>
-                        <ResultDataBox user={item.nick} points1={item.score} points2={item.total} type={item.type} date={item.date}/>
+                        <ResultDataBox user={item.nick} points1={item.score} points2={item.total} type={item.type}
+                                       date={item.date}/>
                     }
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleOnRefresh}/>}
-                    keyExtractor={()=>{}}
+                    keyExtractor={() => {
+                    }}
                 />
             </View>
         </SafeAreaView>
@@ -267,7 +521,7 @@ const styles = StyleSheet.create({
     },
     testQuestionNumber: {
         flex: 1,
-        textAlign: "left",
+        textAlign: "center",
         fontSize: 17,
         marginLeft: 25,
     },
@@ -284,7 +538,6 @@ const styles = StyleSheet.create({
     },
     testAnswerButton: {
         borderWidth: 1,
-        backgroundColor: "#ccc",
         marginLeft: 20,
         marginRight: 20,
         marginBottom: 5,
@@ -342,7 +595,10 @@ const styles = StyleSheet.create({
     TOSButton: {
         backgroundColor: "#c0c0c0",
         margin: 20,
-    }
+    },
+    hidden: {
+        display: 'none',
+    },
 });
 
 
