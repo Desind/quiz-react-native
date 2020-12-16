@@ -11,190 +11,10 @@ import ResultDataBox from "./ResultDataBox";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {FlatList} from "react-native";
 import {RefreshControl} from "react-native";
+import { Input } from 'react-native-elements';
 import CountDown from 'react-native-countdown-component';
 
-let quizes = [
-    {
-        "name": "Wiedza o muzyce współczesnej",
-        "tag1": "#Metal",
-        "tag2": "#Deathcore",
-        "description": "Test sprawdzający wiedzę o współczesnej muzyce metalowej",
-        "tasks": [
-            {
-                "question": "Której literze z w alfabecie morsa odpowiada rytm z intro Meshuggah - Bleed",
-                "answers": [
-                    {
-                        "content": "A",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "F",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "G",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "V",
-                        "isCorrect": true,
-                    },
-                ],
-                "duration": 20
-            },
-            {
-                "question": "Co jest najlepszą częścią piosenki",
-                "answers": [
-                    {
-                        "content": "Refren",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "Blastbeat",
-                        "isCorrect": true,
-                    },
-                    {
-                        "content": "Breakdown",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "Intro",
-                        "isCorrect": false,
-                    },
-                ],
-                "duration": 18
-            },
-            {
-                "question": "Josean Orta jest perkusistą w zespole",
-                "answers": [
-                    {
-                        "content": "Thy Art is Murder",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "Cattle Decapitation",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "Infant Anihilator",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "Fit For an Autopsy",
-                        "isCorrect": true,
-                    },
-                ],
-                "duration": 17
-            }
-        ]
-
-    },
-    {
-        "name": "Quiz 2",
-        "tag1": "#tag1",
-        "tag2": "#tag2",
-        "description": "Description of a quiz",
-        "tasks": [
-            {
-                "question": "Poprawne A",
-                "answers": [
-                    {
-                        "content": "A",
-                        "isCorrect": true,
-                    },
-                    {
-                        "content": "B",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "C",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "D",
-                        "isCorrect": false,
-                    },
-                ],
-                "duration": 5
-            },
-            {
-                "question": "Poprawne te, które nie są F, I, J",
-                "answers": [
-                    {
-                        "content": "F",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "K",
-                        "isCorrect": true,
-                    },
-                    {
-                        "content": "J",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "I",
-                        "isCorrect": false,
-                    },
-                ],
-                "duration": 4
-            },
-            {
-                "question": "2+2*2/2",
-                "answers": [
-                    {
-                        "content": "2",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "4",
-                        "isCorrect": true,
-                    },
-                    {
-                        "content": "8",
-                        "isCorrect": false,
-                    },
-                    {
-                        "content": "6",
-                        "isCorrect": false,
-                    },
-                ],
-                "duration": 20
-            }
-        ]
-    }
-]
-
-let results = [
-    {
-        "nick": "nick1",
-        "score": 1,
-        "total": 20,
-        "type": "historia",
-        "date": "22-11-2020"
-    },
-    {
-        "nick": "nick2",
-        "score": 5,
-        "total": 20,
-        "type": "historia",
-        "date": "22-11-2020"
-    },
-    {
-        "nick": "nick3",
-        "score": 4,
-        "total": 20,
-        "type": "historia",
-        "date": "22-11-2020"
-    },
-    {
-        "nick": "nick4",
-        "score": 20,
-        "total": 20,
-        "type": "historia",
-        "date": "22-11-2020"
-    }
-]
+let currentQuiz = []
 
 function Home({navigation}) {
     return (
@@ -237,27 +57,45 @@ function ToS({navigation}) {
 }
 
 function Main({navigation}) {
+    const [quizes, setData] = useState([]);
+    const [loading,setLoading] = useState(true);
+    useEffect(() => {
+        fetch('http://tgryl.pl/quiz/tests')
+            .then((response) => response.json())
+            .then((json) => setData(json))
+            .catch((error) => console.error(error))
+            .finally(() => setLoading(false));
+    }, []);
+    console.log(quizes);
     const tosHandler = async () => {
         try {
             const value = await AsyncStorage.getItem('@storage_Key')
             if (value !== null) {
             } else {
-                console.log("1");
                 navigation.navigate('ToS');
             }
         } catch (e) {
             // error reading value
         }
     }
-    tosHandler();
+    tosHandler().then();
+
+    function rekinHandler(id){
+        console.log(id)
+        fetch('http://tgryl.pl/quiz/test/'+id)
+            .then((response) => response.json())
+            .then((json) => (currentQuiz = json))
+            .catch((error) => console.error(error))
+            .finally(() => (navigation.navigate('Test',{id})));
+    }
 
 
     return (
         <SafeAreaView style={styles.safeAreaMain}>
             <ScrollView>
                 {quizes.map((item, id) =>
-                    <QuizBox title={item.name} onClick={() => navigation.navigate('Test', {id})} tag1={item.tag1}
-                             tag2={item.tag2}
+                    <QuizBox title={item.name} onClick={() => rekinHandler(item.id)} tag1={item.tags[0]}
+                             tag2={item.tags[1]}
                              text={item.description}/>
                 )}
             </ScrollView>
@@ -272,28 +110,28 @@ function Test({route, navigation}) {
 
     function initiateQuestion() {
         console.log("initquestion")
-        setTitle(quizes[id].name);
-        if (questionNumber > quizes[id].tasks.length - 1) {
+        setTitle(currentQuiz.name);
+        if (questionNumber > currentQuiz.tasks.length - 1) {
             finishQuiz();
         } else {
-            setTimeLeft(quizes[id].tasks[questionNumber].duration);
-            setQuestion(quizes[id].tasks[questionNumber].question);
-            setAnsA(quizes[id].tasks[questionNumber].answers[0].content);
-            setAnsB(quizes[id].tasks[questionNumber].answers[1].content);
-            setAnsC(quizes[id].tasks[questionNumber].answers[2].content);
-            setAnsD(quizes[id].tasks[questionNumber].answers[3].content);
+            setTimeLeft(currentQuiz.tasks[questionNumber].duration);
+            setQuestion(currentQuiz.tasks[questionNumber].question);
+            setAnsA(currentQuiz.tasks[questionNumber].answers[0].content);
+            setAnsB(currentQuiz.tasks[questionNumber].answers[1].content);
+            setAnsC(currentQuiz.tasks[questionNumber].answers[2].content);
+            setAnsD(currentQuiz.tasks[questionNumber].answers[3].content);
         }
     }
 
     function clickedAnswer(answer) {
         console.log("click")
-        if (quizes[id].tasks[questionNumber].answers[answer].isCorrect) {
+        if (currentQuiz.tasks[questionNumber].answers[answer].isCorrect) {
             colorCorrect(answer);
             setCorrect(correct + 1);
         } else {
             colorIncorrect(answer);
         }
-        if (questionNumber <= quizes[id].tasks.length - 1) {
+        if (questionNumber <= currentQuiz.tasks.length - 1) {
             setTimeout(() => {
                 setAnsAColor("#bbb");
                 setAnsBColor("#bbb");
@@ -310,6 +148,7 @@ function Test({route, navigation}) {
     function finishQuiz() {
         console.log("rekin");
         setFinished(true);
+        setSendVisible(true);
     }
 
     function colorCorrect(rekin) {
@@ -365,6 +204,27 @@ function Test({route, navigation}) {
     const [ansBColor, setAnsBColor] = useState("#bbb");
     const [ansCColor, setAnsCColor] = useState("#bbb");
     const [ansDColor, setAnsDColor] = useState("#bbb");
+    const [name, setName] = useState("Your name");
+    const [sendVisible, setSendVisible] = useState(false);
+
+    function semdRemsults() {
+        const obj = {
+            nick: name,
+            score: correct,
+            total: currentQuiz.tasks.length,
+            type: currentQuiz.tags.join(',')
+        }
+        fetch(`http://tgryl.pl/quiz/result`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(obj)
+        }).then(r => (navigation.navigate('Results')))
+        setSendVisible(false);
+    }
+
     return (
         <SafeAreaView>
             <View style={finished && styles.hidden}>
@@ -374,6 +234,7 @@ function Test({route, navigation}) {
                 </View>
                 <Text style={styles.testQuestion}>{question}</Text>
                 <View style={styles.flexColumn}>
+
                     <TouchableOpacity onPress={() => clickedAnswer(0)}
                                       style={[styles.testAnswerButton, {backgroundColor: ansAColor}]}><Text>{ansA}</Text></TouchableOpacity>
                     <TouchableOpacity onPress={() => clickedAnswer(1)}
@@ -388,9 +249,20 @@ function Test({route, navigation}) {
             <View style={!finished && styles.hidden}>
                 <Text style={styles.testTitle}>Result:</Text>
             </View>
-            <View><Text style={styles.testTitle}>{correct}/{quizes[id].tasks.length}</Text></View>
+            <View><Text style={styles.testTitle}>{correct}/{currentQuiz.tasks.length}</Text></View>
             <View style={{flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 20}}>
                 <Text onPress={() => navigation.navigate('Results')}>Results</Text>
+            </View>
+            <View style={!sendVisible && styles.hidden}>
+                <Input
+                    placeholder="Your name"
+                    leftIcon={{ type: 'font-awesome', name: 'comment' }}
+                    style={styles}
+                    onChangeText={value => setName(value)}
+                />
+                <TouchableOpacity style={styles.testAnswerButton} onPress={() => semdRemsults()}>
+                    <Text>Send Results</Text>
+                </TouchableOpacity>
             </View>
 
         </SafeAreaView>
@@ -399,57 +271,30 @@ function Test({route, navigation}) {
 
 function Results({navigation}) {
     const [refreshing, setRefreshing] = useState(false);
+    const [isLoading, setLoading] = useState(true);
+    const [data, setData] = useState([]);
+    useEffect(() => {
+        fetch('http://tgryl.pl/quiz/results')
+            .then((response) => response.json())
+            .then((json) => setData(json))
+            .catch((error) => console.error(error))
+            .finally(() => setLoading(false));
+    }, []);
     const handleOnRefresh = () => {
         setRefreshing(true);
-        results = [
-            {
-                "nick": "nick1",
-                "score": 1,
-                "total": 20,
-                "type": "historia",
-                "date": "22-11-2020"
-            },
-            {
-                "nick": "nick2",
-                "score": 5,
-                "total": 20,
-                "type": "historia",
-                "date": "22-11-2020"
-            },
-            {
-                "nick": "nick3",
-                "score": 4,
-                "total": 20,
-                "type": "historia",
-                "date": "22-11-2020"
-            },
-            {
-                "nick": "nick4",
-                "score": 20,
-                "total": 20,
-                "type": "historia",
-                "date": "22-11-2020"
-            },
-            {
-                "nick": "nick5",
-                "score": 20,
-                "total": 20,
-                "type": "historia",
-                "date": "22-11-2020"
-            }
-        ]
+        fetch('http://tgryl.pl/quiz/results')
+            .then((response) => response.json())
+            .then((json) => setData(json))
+            .catch((error) => console.error(error))
+            .finally(() => setLoading(false));
         setTimeout(() => {
             setRefreshing(false)
         }, 1000)
     }
-    const renderItem = ({pack}) => (
-        <ResultDataBox user={pack.nick} points1={pack.score} points2={pack.total} type={pack.type} date={pack.date}/>
-
-    );
 
     return (
         <SafeAreaView style={styles.flexColumn}>
-            <View style={{alignItems: 'center', justifyContent: 'center', marginTop: 20}}>
+            <View style={{alignItems: 'center', justifyContent: 'center', marginTop: 20,flex:0.1}}>
                 <Text onPress={() => {
                     const temp = console.error;
                     console.error = () => {
@@ -465,9 +310,9 @@ function Results({navigation}) {
                 <Text style={styles.resultsTitleColumns}>Type</Text>
                 <Text style={styles.resultsTitleColumns}>Date</Text>
             </View>
-            <View>
+            <View style={{marginBottom:180}}>
                 <FlatList
-                    data={results}
+                    data={data}
                     renderItem={({item}) =>
                         <ResultDataBox user={item.nick} points1={item.score} points2={item.total} type={item.type}
                                        date={item.date}/>
@@ -603,4 +448,3 @@ const styles = StyleSheet.create({
 
 
 export default App;
-

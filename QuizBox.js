@@ -28,10 +28,12 @@ const styles = StyleSheet.create({
     },
     quizBoxTitle: {
         fontSize: 20,
+        fontFamily: "Rotobo-Black",
         color: "#222",
     },
     quizBoxTag: {
         paddingRight: 10,
+        fontFamily: "Roboto-Thin",
         color: "#2137BD",
     },
     quizBoxTagBox: {
