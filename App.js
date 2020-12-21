@@ -276,7 +276,7 @@ function Results({navigation}) {
     useEffect(() => {
         fetch('http://tgryl.pl/quiz/results')
             .then((response) => response.json())
-            .then((json) => setData(json))
+            .then((json) => setData(json.reverse()))
             .catch((error) => console.error(error))
             .finally(() => setLoading(false));
     }, []);
@@ -284,7 +284,7 @@ function Results({navigation}) {
         setRefreshing(true);
         fetch('http://tgryl.pl/quiz/results')
             .then((response) => response.json())
-            .then((json) => setData(json))
+            .then((json) => setData(json.reverse()))
             .catch((error) => console.error(error))
             .finally(() => setLoading(false));
         setTimeout(() => {
