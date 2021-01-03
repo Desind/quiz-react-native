@@ -41,6 +41,66 @@ function Home({navigation}) {
     );
 }
 
+function RandomQuiz({navigation}){
+    const readQuizes = async () => {
+        try {
+            let value = await AsyncStorage.getItem('quizes');
+            if (value !== null) {
+                return value;
+            }
+        } catch (error) {
+            return null;
+        }
+    }
+    const readQuiz = async (id) => {
+        try {
+            let value = await AsyncStorage.getItem(id);
+            if (value !== null) {
+                return value;
+            }
+        } catch (e) {
+            return null;
+        }
+    }
+    var quiz;
+    let quizid;
+    function randomQuiz(){
+        readQuizes().then((value) => JSON.parse(value))
+            .then((json) => {
+                var s = _.shuffle(json);
+                if(s[0].id == "5eaefb3b0e44b1621d02ac7e"){
+                    quiz = s[1];
+                }else{
+                    quiz = s[0];
+                }
+                console.log(JSON.stringify(quiz));
+                quizid = quiz.id;
+                readQuiz(quiz.id)
+                    .then((response) => JSON.parse(response))
+                    .then((json) => {
+                        let r = json;
+                        r.tasks = _.shuffle(r.tasks);
+                        r.tasks.forEach(item => {
+                            item.answers = _.shuffle(item.answers);
+                        });
+                        currentQuiz = r;
+                    })
+                    .catch((error) => console.error(error))
+                    .finally(() => (navigation.navigate('Test', quizid)));
+
+            })
+
+    }
+    return(
+      <SafeAreaView>
+          <Text style={styles.testTitle}>Random Quiz</Text>
+          <TouchableOpacity style={styles.testAnswerButton} onPress={() => randomQuiz()}>
+              <Text>Start random Quiz</Text>
+          </TouchableOpacity>
+      </SafeAreaView>
+    );
+}
+
 function FetchQuizes({navigation}) {
     let data;
     const [onLoadText, setText] = useState("");
@@ -542,6 +602,7 @@ function App() {
                 <Drawer.Screen name="Home" component={Home}/>
                 <Drawer.Screen name="Results" component={Results}/>
                 <Drawer.Screen name="Update Quizes" component={FetchQuizes}/>
+                <Drawer.Screen name="Random Quiz" component={RandomQuiz}/>
             </Drawer.Navigator>
         </NavigationContainer>
     );
