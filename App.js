@@ -14,6 +14,8 @@ import {RefreshControl} from "react-native";
 import { Input } from 'react-native-elements';
 import CountDown from 'react-native-countdown-component';
 
+var _ = require('lodash');
+
 let currentQuiz = []
 
 function Home({navigation}) {
@@ -60,13 +62,52 @@ function Main({navigation}) {
     const [quizes, setData] = useState([]);
     const [loading,setLoading] = useState(true);
     useEffect(() => {
-        fetch('http://tgryl.pl/quiz/tests')
-            .then((response) => response.json())
-            .then((json) => setData(json))
-            .catch((error) => console.error(error))
-            .finally(() => setLoading(false));
+        let needUpdate = false;
+        readLastUpdated().then((result) => {
+            let d = new Date().getDate();
+            if(d.toString() != result){
+                needUpdate = true;
+            }
+            console.log("currentDay:", d);
+            console.log("lastUpdatedDay:", result);
+            console.log("needUpdate",needUpdate);
+        });
+        if(needUpdate == true){
+            fetch('http://tgryl.pl/quiz/tests')
+                .then((response) => response.json())
+                .then((json) => setData(json))
+                .catch((error) => console.error(error))
+                .finally(() => {
+                    saveQuizes(quizes);
+                    console.log(JSON.stringify(quizes));
+                    quizes.forEach(item => {
+                        console.log(item.id);
+                        fetch('http://tgryl.pl/quiz/test/'+item.id)
+                            .then((response) => response.json())
+                            .then((json) => {
+                                saveQuiz(item.id,JSON.stringify(json))
+                            })
+                            .catch((error) => console.error(error))
+                            .finally();
+                    });
+                });
+            saveLastUpdated();
+        }else{
+            readQuizes().then((value) => JSON.parse(value))
+                .then((json) => {
+                    var s = _.shuffle(json);
+                    setData(s);
+                })
+                .catch((error) => console.error(error));
+            console.log(quizes);
+
+        }
+
+
     }, []);
-    console.log(quizes);
+
+
+
     const tosHandler = async () => {
         try {
             const value = await AsyncStorage.getItem('@storage_Key')
@@ -79,12 +120,77 @@ function Main({navigation}) {
         }
     }
     tosHandler().then();
+    const saveQuizes = async (quizes) => {
+        try {
+            await AsyncStorage.setItem('quizes', JSON.stringify(quizes));
+        } catch (e) {
+            console.log("error: saveQuizes");
+        }
+    }
+    const saveQuiz = async (id, value) => {
+        try {
+            await AsyncStorage.setItem(id.toString(), value);
+        } catch (e) {
+            console.log("error: quiz",id);
+        }
+    }
+    const saveLastUpdated = async() => {
+        try {
+            let d = new Date().getDate();
+            await AsyncStorage.setItem('lastUpdated', d.toString());
+        } catch (e) {
+            console.log("error: lastUpdated");
+        }
+    }
+    const readQuizes = async () => {
+        try{
+            let value = await AsyncStorage.getItem('quizes');
+            if(value !== null){
+                return value;
+            }
+        }catch (error){
+            return null;
+        }
+    }
+    const readLastUpdated = async() => {
+        try {
+            let value = await AsyncStorage.getItem("lastUpdated");
+            if(value !== null){
+                return value;
+            }
+        }catch (e) {
+            return null;
+        }
+    }
+    const readQuiz = async(id) =>{
+        try {
+            let value = await AsyncStorage.getItem(id);
+            if(value !== null){
+                return value;
+            }
+        }catch (e) {
+            return null;
+        }
+    }
 
     function rekinHandler(id){
-        console.log(id)
-        fetch('http://tgryl.pl/quiz/test/'+id)
+        /*fetch('http://tgryl.pl/quiz/test/'+id)
             .then((response) => response.json())
-            .then((json) => (currentQuiz = json))
+            .then((json) => {
+                currentQuiz = json;
+            })
+            .catch((error) => console.error(error))
+            .finally(() => (navigation.navigate('Test',{id})));*/
+        readQuiz(id)
+            .then((response) => JSON.parse(response))
+            .then((json) => {
+                let r = json;
+                r.tasks = _.shuffle(r.tasks);
+                r.tasks.forEach(item => {
+                    item.answers = _.shuffle(item.answers);
+                });
+                currentQuiz = r;
+            })
             .catch((error) => console.error(error))
             .finally(() => (navigation.navigate('Test',{id})));
     }

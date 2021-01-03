@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     },
     quizBoxTag: {
         paddingRight: 10,
-        fontFamily: "Roboto-Thin",
+        fontFamily: "Roboto-MediumItalic",
         color: "#2137BD",
     },
     quizBoxTagBox: {
