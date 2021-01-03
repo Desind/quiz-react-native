@@ -1,5 +1,4 @@
-import {StatusBar} from 'expo-status-bar';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, View, SafeAreaView, TouchableOpacity, ScrollView} from 'react-native';
 import 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
@@ -11,10 +10,23 @@ import ResultDataBox from "./ResultDataBox";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {FlatList} from "react-native";
 import {RefreshControl} from "react-native";
-import { Input } from 'react-native-elements';
+import {Input} from 'react-native-elements';
 import CountDown from 'react-native-countdown-component';
+import NetInfo from "@react-native-community/netinfo";
+import Toast from 'react-native-toast-message';
 
 var _ = require('lodash');
+
+const unsubscribe = NetInfo.addEventListener(state => {
+    console.log("Connection type", state.type);
+    console.log("Is connected?", state.isConnected);
+});
+let isNetworkWorking;
+NetInfo.fetch().then(state => {
+    isNetworkWorking = state.isConnected;
+    console.log("isNetworkWorking", isNetworkWorking)
+});
+
 
 let currentQuiz = []
 
@@ -26,6 +38,61 @@ function Home({navigation}) {
             <Stack.Screen name="Results" component={Results}/>
             <Stack.Screen name="ToS" component={ToS}/>
         </Stack.Navigator>
+    );
+}
+
+function FetchQuizes({navigation}) {
+    let data;
+    const [onLoadText, setText] = useState("");
+    const saveQuizes = async (quizes) => {
+        try {
+            await AsyncStorage.setItem('quizes', JSON.stringify(quizes));
+        } catch (e) {
+            console.log("error: saveQuizes");
+        }
+    }
+    const saveQuiz = async (id, value) => {
+        try {
+            await AsyncStorage.setItem(id.toString(), value);
+        } catch (e) {
+            console.log("error: quiz", id);
+        }
+    }
+    const saveLastUpdated = async () => {
+        try {
+            let d = new Date().getDate();
+            await AsyncStorage.setItem('lastUpdated', d.toString());
+        } catch (e) {
+            console.log("error: lastUpdated");
+        }
+    }
+
+    fetch('http://tgryl.pl/quiz/tests')
+        .then((response) => response.json())
+        .then((json) => {
+            var s = _.shuffle(json);
+            data = s;
+            console.log("data",data);
+
+        })
+        .catch((error) => console.error(error))
+        .finally(() => {
+            saveQuizes(data).then();
+            console.log(JSON.stringify(data));
+            data.forEach(item => {
+                console.log(item.id);
+                fetch('http://tgryl.pl/quiz/test/' + item.id)
+                    .then((response) => response.json())
+                    .then((json) => {
+                        saveQuiz(item.id, JSON.stringify(json)).then();
+                    })
+            });
+            saveLastUpdated().then();
+        });
+    useEffect(() =>navigation.navigate('Home'));
+    return (
+        <SafeAreaView>
+        </SafeAreaView>
     );
 }
 
@@ -60,39 +127,44 @@ function ToS({navigation}) {
 
 function Main({navigation}) {
     const [quizes, setData] = useState([]);
-    const [loading,setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     useEffect(() => {
         let needUpdate = false;
         readLastUpdated().then((result) => {
             let d = new Date().getDate();
-            if(d.toString() != result){
+            if (d.toString() != result) {
                 needUpdate = true;
             }
             console.log("currentDay:", d);
             console.log("lastUpdatedDay:", result);
-            console.log("needUpdate",needUpdate);
+            console.log("needUpdate", needUpdate);
         });
-        if(needUpdate == true){
+        if (isNetworkWorking) {
             fetch('http://tgryl.pl/quiz/tests')
                 .then((response) => response.json())
-                .then((json) => setData(json))
+                .then((json) => {
+                    var s = _.shuffle(json);
+                    setData(s);
+                })
                 .catch((error) => console.error(error))
                 .finally(() => {
-                    saveQuizes(quizes);
-                    console.log(JSON.stringify(quizes));
-                    quizes.forEach(item => {
-                        console.log(item.id);
-                        fetch('http://tgryl.pl/quiz/test/'+item.id)
-                            .then((response) => response.json())
-                            .then((json) => {
-                                saveQuiz(item.id,JSON.stringify(json))
-                            })
-                            .catch((error) => console.error(error))
-                            .finally();
-                    });
+                    if (needUpdate) {
+                        saveQuizes(quizes);
+                        console.log(JSON.stringify(quizes));
+                        quizes.forEach(item => {
+                            console.log(item.id);
+                            fetch('http://tgryl.pl/quiz/test/' + item.id)
+                                .then((response) => response.json())
+                                .then((json) => {
+                                    saveQuiz(item.id, JSON.stringify(json))
+                                })
+                                .catch((error) => console.error(error))
+                                .finally();
+                        });
+                        saveLastUpdated();
+                    }
                 });
-            saveLastUpdated();
-        }else{
+        } else {
             readQuizes().then((value) => JSON.parse(value))
                 .then((json) => {
                     var s = _.shuffle(json);
@@ -100,12 +172,10 @@ function Main({navigation}) {
                 })
                 .catch((error) => console.error(error));
             console.log(quizes);
-
         }
 
 
     }, []);
-
 
 
     const tosHandler = async () => {
@@ -131,10 +201,10 @@ function Main({navigation}) {
         try {
             await AsyncStorage.setItem(id.toString(), value);
         } catch (e) {
-            console.log("error: quiz",id);
+            console.log("error: quiz", id);
         }
     }
-    const saveLastUpdated = async() => {
+    const saveLastUpdated = async () => {
         try {
             let d = new Date().getDate();
             await AsyncStorage.setItem('lastUpdated', d.toString());
@@ -143,56 +213,64 @@ function Main({navigation}) {
         }
     }
     const readQuizes = async () => {
-        try{
+        try {
             let value = await AsyncStorage.getItem('quizes');
-            if(value !== null){
+            if (value !== null) {
                 return value;
             }
-        }catch (error){
+        } catch (error) {
             return null;
         }
     }
-    const readLastUpdated = async() => {
+    const readLastUpdated = async () => {
         try {
             let value = await AsyncStorage.getItem("lastUpdated");
-            if(value !== null){
+            if (value !== null) {
                 return value;
             }
-        }catch (e) {
+        } catch (e) {
             return null;
         }
     }
-    const readQuiz = async(id) =>{
+    const readQuiz = async (id) => {
         try {
             let value = await AsyncStorage.getItem(id);
-            if(value !== null){
+            if (value !== null) {
                 return value;
             }
-        }catch (e) {
+        } catch (e) {
             return null;
         }
     }
 
-    function rekinHandler(id){
-        /*fetch('http://tgryl.pl/quiz/test/'+id)
-            .then((response) => response.json())
-            .then((json) => {
-                currentQuiz = json;
-            })
-            .catch((error) => console.error(error))
-            .finally(() => (navigation.navigate('Test',{id})));*/
-        readQuiz(id)
-            .then((response) => JSON.parse(response))
-            .then((json) => {
-                let r = json;
-                r.tasks = _.shuffle(r.tasks);
-                r.tasks.forEach(item => {
-                    item.answers = _.shuffle(item.answers);
-                });
-                currentQuiz = r;
-            })
-            .catch((error) => console.error(error))
-            .finally(() => (navigation.navigate('Test',{id})));
+    function rekinHandler(id) {
+        if (isNetworkWorking) {
+            fetch('http://tgryl.pl/quiz/test/' + id)
+                .then((response) => response.json())
+                .then((json) => {
+                    let r = json;
+                    r.tasks = _.shuffle(r.tasks);
+                    r.tasks.forEach(item => {
+                        item.answers = _.shuffle(item.answers);
+                    });
+                    currentQuiz = r;
+                })
+                .catch((error) => console.error(error))
+                .finally(() => (navigation.navigate('Test', {id})));
+        } else {
+            readQuiz(id)
+                .then((response) => JSON.parse(response))
+                .then((json) => {
+                    let r = json;
+                    r.tasks = _.shuffle(r.tasks);
+                    r.tasks.forEach(item => {
+                        item.answers = _.shuffle(item.answers);
+                    });
+                    currentQuiz = r;
+                })
+                .catch((error) => console.error(error))
+                .finally(() => (navigation.navigate('Test', {id})));
+        }
     }
 
 
@@ -320,19 +398,26 @@ function Test({route, navigation}) {
             total: currentQuiz.tasks.length,
             type: currentQuiz.tags.join(',')
         }
-        fetch(`http://tgryl.pl/quiz/result`, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(obj)
-        }).then(r => (navigation.navigate('Results')))
-        setSendVisible(false);
+        if (isNetworkWorking) {
+            fetch(`http://tgryl.pl/quiz/result`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(obj)
+            }).then(r => (navigation.navigate('Results')))
+            setSendVisible(false);
+        } else {
+            Toast.show({
+                text1: 'No internet connection found'
+            });
+        }
     }
 
     return (
         <SafeAreaView>
+            <Toast ref={(ref) => Toast.setRef(ref)}/>
             <View style={finished && styles.hidden}>
                 <Text style={styles.testTitle}>{title}</Text>
                 <View style={styles.flexRow}>
@@ -362,7 +447,7 @@ function Test({route, navigation}) {
             <View style={!sendVisible && styles.hidden}>
                 <Input
                     placeholder="Your name"
-                    leftIcon={{ type: 'font-awesome', name: 'comment' }}
+                    leftIcon={{type: 'font-awesome', name: 'comment'}}
                     style={styles}
                     onChangeText={value => setName(value)}
                 />
@@ -370,6 +455,7 @@ function Test({route, navigation}) {
                     <Text>Send Results</Text>
                 </TouchableOpacity>
             </View>
+
 
         </SafeAreaView>
     );
@@ -380,19 +466,31 @@ function Results({navigation}) {
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState([]);
     useEffect(() => {
-        fetch('http://tgryl.pl/quiz/results')
-            .then((response) => response.json())
-            .then((json) => setData(json.reverse()))
-            .catch((error) => console.error(error))
-            .finally(() => setLoading(false));
+        if (isNetworkWorking) {
+            fetch('http://tgryl.pl/quiz/results')
+                .then((response) => response.json())
+                .then((json) => setData(json.reverse()))
+                .catch((error) => console.error(error))
+                .finally(() => setLoading(false));
+        } else {
+            Toast.show({
+                text1: 'No internet connection found'
+            });
+        }
     }, []);
     const handleOnRefresh = () => {
         setRefreshing(true);
-        fetch('http://tgryl.pl/quiz/results')
-            .then((response) => response.json())
-            .then((json) => setData(json.reverse()))
-            .catch((error) => console.error(error))
-            .finally(() => setLoading(false));
+        if (isNetworkWorking) {
+            fetch('http://tgryl.pl/quiz/results')
+                .then((response) => response.json())
+                .then((json) => setData(json.reverse()))
+                .catch((error) => console.error(error))
+                .finally(() => setLoading(false));
+        } else {
+            Toast.show({
+                text1: 'No internet connection found'
+            });
+        }
         setTimeout(() => {
             setRefreshing(false)
         }, 1000)
@@ -400,7 +498,7 @@ function Results({navigation}) {
 
     return (
         <SafeAreaView style={styles.flexColumn}>
-            <View style={{alignItems: 'center', justifyContent: 'center', marginTop: 20,flex:0.1}}>
+            <View style={{alignItems: 'center', justifyContent: 'center', marginTop: 20, flex: 0.1}}>
                 <Text onPress={() => {
                     const temp = console.error;
                     console.error = () => {
@@ -416,7 +514,7 @@ function Results({navigation}) {
                 <Text style={styles.resultsTitleColumns}>Type</Text>
                 <Text style={styles.resultsTitleColumns}>Date</Text>
             </View>
-            <View style={{marginBottom:180}}>
+            <View style={{marginBottom: 180}}>
                 <FlatList
                     data={data}
                     renderItem={({item}) =>
@@ -428,6 +526,7 @@ function Results({navigation}) {
                     }}
                 />
             </View>
+            <Toast ref={(ref) => Toast.setRef(ref)}/>
         </SafeAreaView>
 
     );
@@ -442,6 +541,7 @@ function App() {
             <Drawer.Navigator initialRouteName="Home">
                 <Drawer.Screen name="Home" component={Home}/>
                 <Drawer.Screen name="Results" component={Results}/>
+                <Drawer.Screen name="Update Quizes" component={FetchQuizes}/>
             </Drawer.Navigator>
         </NavigationContainer>
     );
